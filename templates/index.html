@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeAnimo - Red Social Deportiva</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --success: #28a745;
+            --bg: #f4f7f6;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding-bottom: 50px;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #01579b;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .info {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .cupos {
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        /* Barra de progreso de cupos */
+        .progress-container {
+            background: #eee;
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            background: var(--success);
+            height: 100%;
+            transition: width 0.4s ease;
+        }
+
+        .btn-unirse {
+            display: block;
+            text-align: center;
+            background-color: var(--success);
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .btn-unirse:hover {
+            background-color: #218838;
+        }
+
+        /* Estilos para módulos no disponibles */
+        .disabled {
+            background: #fafafa;
+            border: 1px dashed #ccc;
+            opacity: 0.7;
+            filter: grayscale(1);
+        }
+
+        .btn-disabled {
+            background-color: #9e9e9e;
+            pointer-events: none;
+        }
+
+        .coming-soon {
+            color: #888;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    MeAnimo ⚽🏀🚴
+</header>
+
+<div class="container">
+    <h2>Próximos Encuentros</h2>
+
+    <div class="card">
+        <span class="badge">DEPORTE DESTACADO</span>
+        <h3>⚽ {{ partido.deporte }} 5vs5</h3>
+        <div class="info">
+            <p><strong>📍 Lugar:</strong> {{ partido.lugar }}</p>
+            <p><strong>📅 Cuándo:</strong> {{ partido.fecha }}</p>
+        </div>
+
+        <div class="cupos">
+            Inscritos: {{ partido.participantes|length }} / {{ partido.cupos_totales }}
+            <div class="progress-container">
+                <div class="progress-bar" style="width: {{ (partido.participantes|length / partido.cupos_totales) * 100 }}%;"></div>
+            </div>
+        </div>
+
+        <a href="/unirse" class="btn-unirse">¡Me Animo y Me Uno!</a>
+    </div>
+
+    <div class="card disabled">
+        <h3>🏀 Básquetbol 3vs3</h3>
+        <p class="coming-soon">Módulo disponible en la próxima actualización.</p>
+        <a href="#" class="btn-unirse btn-disabled">Bloqueado</a>
+    </div>
+
+    <div class="card disabled">
+        <h3>🏋️ Partner de Gym</h3>
+        <p class="coming-soon">Módulo disponible en la próxima actualización.</p>
+        <a href="#" class="btn-unirse btn-disabled">Bloqueado</a>
+    </div>
+</div>
+
+</body>
+</html>
