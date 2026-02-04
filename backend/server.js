@@ -14,36 +14,51 @@ app.get('/api/partidos', async (req, res) => {
     res.json(data || []);
 });
 
-// Crear partido con teléfono y comentarios
+// Crear partido
 app.post('/api/crear-partido', async (req, res) => {
     const { deporte, lugar, fecha_hora, cupos_totales, comentarios, telefono_organizador } = req.body;
-    const { error } = await supabase.from('partidos').insert([{ 
+    await supabase.from('partidos').insert([{ 
         deporte, lugar, fecha_hora, cupos_totales: parseInt(cupos_totales), 
         comentarios, telefono_organizador, cupos_actuales: 0 
     }]);
-    if (error) return res.status(400).json(error);
-    res.json({ mensaje: "Publicación creada con éxito" });
+    res.json({ mensaje: "Éxito" });
 });
 
-// Inscripción con VALIDACIÓN DE CUPOS
+// Unirse con validación
 app.post('/api/unirse', async (req, res) => {
     const { partidoId, nombre_usuario } = req.body;
-
-    const { data: partido } = await supabase.from('partidos').select('cupos_actuales, cupos_totales, telefono_organizador, deporte, lugar').eq('id', partidoId).single();
-
-    if (partido.cupos_actuales >= partido.cupos_totales) {
-        return res.status(400).json({ error: "¡Cupos llenos!" });
-    }
+    const { data: p } = await supabase.from('partidos').select('*').eq('id', partidoId).single();
+    if (p.cupos_actuales >= p.cupos_totales) return res.status(400).json({ error: "Cupos llenos" });
 
     await supabase.from('inscripciones').insert([{ partido_id: partidoId, nombre_usuario }]);
-    await supabase.from('partidos').update({ cupos_actuales: partido.cupos_actuales + 1 }).eq('id', partidoId);
+    await supabase.from('partidos').update({ cupos_actuales: p.cupos_actuales + 1 }).eq('id', partidoId);
+    res.json({ mensaje: "Inscrito", telefono: p.telefono_organizador, deporte: p.deporte, lugar: p.lugar });
+});
+
+// SALIR DEL EVENTO
+app.post('/api/desunirse', async (req, res) => {
+    const { partidoId, nombre_usuario } = req.body;
+    const { data: inscripcion } = await supabase.from('inscripciones').select('id').eq('partido_id', partidoId).eq('nombre_usuario', nombre_usuario).limit(1).single();
     
-    res.json({ mensaje: "Inscripción exitosa", telefono: partido.telefono_organizador, deporte: partido.deporte, lugar: partido.lugar });
+    if (inscripcion) {
+        await supabase.from('inscripciones').delete().eq('id', inscripcion.id);
+        const { data: p } = await supabase.from('partidos').select('cupos_actuales').eq('id', partidoId).single();
+        await supabase.from('partidos').update({ cupos_actuales: Math.max(0, p.cupos_actuales - 1) }).eq('id', partidoId);
+        res.json({ mensaje: "Has salido del evento" });
+    } else {
+        res.status(404).json({ error: "No se encontró tu inscripción" });
+    }
+});
+
+// Ver inscritos
+app.get('/api/partidos/:id/inscritos', async (req, res) => {
+    const { data } = await supabase.from('inscripciones').select('nombre_usuario').eq('partido_id', req.params.id);
+    res.json(data || []);
 });
 
 // Editar y Eliminar
 app.put('/api/partidos/:id/comentario', async (req, res) => {
-    const { error } = await supabase.from('partidos').update({ comentarios: req.body.comentarios }).eq('id', req.params.id);
+    await supabase.from('partidos').update({ comentarios: req.body.comentarios }).eq('id', req.params.id);
     res.json({ mensaje: "Actualizado" });
 });
 
@@ -52,10 +67,5 @@ app.delete('/api/partidos/:id', async (req, res) => {
     res.json({ mensaje: "Eliminado" });
 });
 
-app.get('/api/partidos/:id/inscritos', async (req, res) => {
-    const { data } = await supabase.from('inscripciones').select('nombre_usuario').eq('partido_id', req.params.id);
-    res.json(data || []);
-});
-
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor MeAnimo listo`));
+app.listen(PORT, () => console.log("Servidor MeAnimo OK"));
