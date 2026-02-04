@@ -7,15 +7,18 @@
     <style>
         :root { --primary: #007bff; --success: #28a745; --danger: #dc3545; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
-        header { background: var(--primary); color: white; padding: 20px; text-align: center; font-weight: bold; }
+        header { background: var(--primary); color: white; padding: 20px; text-align: center; font-weight: bold; font-size: 1.5rem; }
         .container { max-width: 600px; margin: auto; padding: 20px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: var(--primary); }
         .btn-success { background: var(--success); }
-        .btn-admin { background: #6c757d; font-size: 0.8rem; margin-top: 40px; }
-        .admin-only { display: none; background: #fff3f3; border: 1px dashed var(--danger); padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .badge { display: inline-block; padding: 4px 10px; background: #e3f2fd; color: #0d47a1; border-radius: 20px; font-size: 0.8rem; }
+        .btn-danger { background: var(--danger); margin-top: 10px; }
+        .btn-admin { background: #6c757d; font-size: 0.8rem; margin-top: 50px; opacity: 0.5; }
+        .badge { display: inline-block; padding: 4px 10px; background: #e3f2fd; color: #0d47a1; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -23,30 +26,47 @@
 <header>MeAnimo ⚽🏀🏋️🚴</header>
 
 <div class="container">
-
-    <div id="panel-admin" class="admin-only">
-        <h3 style="color: var(--danger);">🛠️ Panel de Administración (Julio)</h3>
-        <p>Estás en modo editor. Puedes crear actividades oficiales.</p>
-        <input type="text" id="deporte" placeholder="Deporte" style="width:95%; margin-bottom:10px; padding:8px;">
-        <input type="text" id="lugar" placeholder="Lugar (Ej: Inacap Santiago Sur)" style="width:95%; margin-bottom:10px; padding:8px;">
-        <input type="datetime-local" id="fecha_hora" style="width:95%; margin-bottom:10px; padding:8px;">
-        <input type="number" id="cupos_totales" placeholder="Cupos totales" style="width:95%; margin-bottom:10px; padding:8px;">
-        <button onclick="crearActividad()" class="btn btn-primary">Publicar Actividad</button>
-        <button onclick="cerrarSesionAdmin()" class="btn" style="background:none; color:gray; font-size:0.7rem;">Cerrar Modo Admin</button>
+    
+    <h2>➕ Publicar Actividad</h2>
+    <div class="card">
+        <div class="form-group">
+            <label>Deporte</label>
+            <select id="deporte">
+                <option value="⚽ Fútbol">⚽ Fútbol</option>
+                <option value="🏀 Básquetbol">🏀 Básquetbol</option>
+                <option value="🏋️ Partner Gym">🏋️ Partner de Gym</option>
+                <option value="🚴 Ciclismo">🚴 Ciclismo</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Lugar</label>
+            <input type="text" id="lugar" placeholder="Ej: Canchas Inacap Santiago Sur">
+        </div>
+        <div class="form-group">
+            <label>Fecha y Hora</label>
+            <input type="datetime-local" id="fecha_hora">
+        </div>
+        <div class="form-group">
+            <label>Cupos Disponibles</label>
+            <input type="number" id="cupos_totales" value="10">
+        </div>
+        <button onclick="crearActividad()" class="btn btn-primary">Publicar Ahora</button>
     </div>
 
-    <h2>📅 Actividades Disponibles</h2>
-    <p style="font-size: 0.9rem; color: #666;">Cualquiera puede unirse a estos encuentros.</p>
-    <div id="lista-actividades">Cargando actividades...</div>
+    <h2>📅 Próximos Encuentros</h2>
+    <div id="lista-actividades">Buscando actividades...</div>
 
-    <hr style="margin-top: 50px; border: 0; border-top: 1px solid #ccc;">
-    <button onclick="accesoAdmin()" class="btn btn-admin">Acceso Administrador</button>
+    <button onclick="accesoAdmin()" class="btn btn-admin">Acceso de Administración</button>
+    <div id="panel-admin" style="display:none;" class="card">
+        <h4 style="color:var(--danger)">Modo Administrador Activo</h4>
+        <button onclick="cerrarAdmin()" class="btn" style="background:gray">Cerrar Sesión Admin</button>
+    </div>
 </div>
 
 <script>
     const API_URL = "https://meanimo-backend.onrender.com";
 
-    // 1. CARGAR ACTIVIDADES (VISIBLE PARA TODOS)
+    // 1. CARGAR ACTIVIDADES
     async function cargarActividades() {
         const contenedor = document.getElementById('lista-actividades');
         const esAdmin = localStorage.getItem("rol") === "admin";
@@ -56,7 +76,7 @@
             const datos = await res.json();
             
             if (datos.length === 0) {
-                contenedor.innerHTML = "<p>No hay actividades programadas. ¡Vuelve más tarde!</p>";
+                contenedor.innerHTML = "<p style='text-align:center;'>No hay actividades. ¡Crea la primera!</p>";
                 return;
             }
 
@@ -66,8 +86,10 @@
                     <h3 style="margin:10px 0;">${act.deporte} en ${act.lugar}</h3>
                     <p>📅 ${new Date(act.fecha_hora).toLocaleString()}</p>
                     <p>👥 Cupos: ${act.cupos_actuales} / ${act.cupos_totales}</p>
-                    <button onclick="unirse(${act.id})" class="btn btn-success">¡Me Uno!</button>
-                    ${esAdmin ? `<button onclick="borrar(${act.id})" style="background:red; color:white; margin-top:5px; border:none; padding:5px; border-radius:5px; cursor:pointer;">Eliminar</button>` : ''}
+                    <button onclick="unirse(${act.id})" class="btn btn-success" ${act.cupos_actuales >= act.cupos_totales ? 'disabled' : ''}>
+                        ${act.cupos_actuales >= act.cupos_totales ? 'Lleno' : '¡Me Uno!'}
+                    </button>
+                    ${esAdmin ? `<button onclick="borrar(${act.id})" class="btn btn-danger">Eliminar Actividad</button>` : ''}
                 </div>
             `).join('');
         } catch (e) {
@@ -75,39 +97,7 @@
         }
     }
 
-    // 2. LÓGICA DE ADMINISTRADOR
-    function accesoAdmin() {
-        const clave = prompt("Introduce la clave maestra:");
-        if (clave === "Inacap2026") {
-            localStorage.setItem("rol", "admin");
-            document.getElementById('panel-admin').style.display = 'block';
-            cargarActividades();
-            alert("Modo Administrador activado, Julio.");
-        } else {
-            alert("Clave incorrecta.");
-        }
-    }
-
-    function cerrarSesionAdmin() {
-        localStorage.removeItem("rol");
-        location.reload();
-    }
-
-    // 3. UNIRSE A ACTIVIDAD (PÚBLICO)
-    async function unirse(id) {
-        try {
-            const res = await fetch(`${API_URL}/api/unirse`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ partidoId: id })
-            });
-            const res_json = await res.json();
-            alert(res_json.mensaje || res_json.error);
-            cargarActividades();
-        } catch (e) { alert("Error al conectar con el servidor."); }
-    }
-
-    // 4. CREAR ACTIVIDAD (SÓLO ADMIN)
+    // 2. CREAR ACTIVIDAD (CUALQUIER USUARIO)
     async function crearActividad() {
         const payload = {
             deporte: document.getElementById('deporte').value,
@@ -115,15 +105,52 @@
             fecha_hora: document.getElementById('fecha_hora').value,
             cupos_totales: document.getElementById('cupos_totales').value
         };
-        const res = await fetch(`${API_URL}/api/crear-partido`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        if(res.ok) { alert("¡Publicado!"); cargarActividades(); }
+
+        if(!payload.lugar || !payload.fecha_hora) return alert("Por favor completa los campos");
+
+        try {
+            const res = await fetch(`${API_URL}/api/crear-partido`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                alert("¡Actividad publicada con éxito! 🚀");
+                cargarActividades();
+            }
+        } catch (e) { alert("Error al publicar."); }
     }
 
-    // Verificar si ya eras admin al cargar
+    // 3. UNIRSE A ACTIVIDAD
+    async function unirse(id) {
+        try {
+            const res = await fetch(`${API_URL}/api/unirse`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ partidoId: id })
+            });
+            const data = await res.json();
+            alert(data.mensaje || data.error);
+            cargarActividades();
+        } catch (e) { alert("Error al unirse."); }
+    }
+
+    // 4. LÓGICA DE ADMIN (PARA JULIO)
+    function accesoAdmin() {
+        const pass = prompt("Clave de Administrador:");
+        if(pass === "Inacap2026") {
+            localStorage.setItem("rol", "admin");
+            document.getElementById('panel-admin').style.display = 'block';
+            cargarActividades();
+            alert("Hola Julio, modo admin activado.");
+        }
+    }
+
+    function cerrarAdmin() {
+        localStorage.removeItem("rol");
+        location.reload();
+    }
+
     if(localStorage.getItem("rol") === "admin") {
         document.getElementById('panel-admin').style.display = 'block';
     }
