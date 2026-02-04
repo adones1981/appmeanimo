@@ -1,79 +1,122 @@
-// 1. FUNCIÓN PARA VER DETALLE E INSCRITOS
-async function verDetalle(id) {
-    // Nota: Eliminamos el prompt inicial para que cualquier invitado vea la lista de inmediato
-    try {
-        const res = await fetch(`${API_URL}/api/partidos/${id}/inscritos`);
-        const inscritos = await res.json();
-        
-        if (inscritos.length === 0) {
-            alert("Aún no hay nadie inscrito en este encuentro.");
-        } else {
-            alert("Inscritos actualmente:\n" + inscritos.map(i => "- " + i.nombre_usuario).join("\n"));
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeAnimo - Inacap Santiago Sur</title>
+    <style>
+        :root { --primary: #007bff; --success: #28a745; --danger: #dc3545; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-success { background: var(--success); }
+        .btn-info { background: #17a2b8; }
+        .btn-danger { background: var(--danger); }
+        iframe { border-radius: 8px; margin-bottom: 10px; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>MeAnimo ⚽🏀</h1>
+    
+    <div class="card">
+        <h3>➕ Publicar Actividad</h3>
+        <input type="text" id="deporte" placeholder="Deporte" style="width:95%; padding:10px; margin-bottom:10px;">
+        <input type="text" id="lugar" placeholder="Dirección (Ej: Inacap Santiago Sur)" style="width:95%; padding:10px; margin-bottom:10px;">
+        <input type="datetime-local" id="fecha_hora" style="width:95%; padding:10px; margin-bottom:10px;">
+        <input type="number" id="cupos_totales" placeholder="Cupos" style="width:95%; padding:10px; margin-bottom:10px;">
+        <button onclick="crearActividad()" class="btn btn-success" style="width:100%;">Publicar Ahora</button>
+    </div>
+
+    <h2>📅 Próximos Encuentros</h2>
+    <div id="lista-actividades">Cargando actividades...</div>
+</div>
+
+<script>
+    const API_URL = "https://meanimo-backend.onrender.com";
+
+    // 1. CARGAR ACTIVIDADES CON MAPA
+    async function cargarActividades() {
+        const contenedor = document.getElementById('lista-actividades');
+        try {
+            const res = await fetch(`${API_URL}/api/partidos`);
+            const datos = await res.json();
+            
+            if (datos.length === 0) {
+                contenedor.innerHTML = "<p>No hay encuentros programados por ahora.</p>";
+                return;
+            }
+
+            contenedor.innerHTML = datos.map(act => {
+                const mapaUrl = `https://maps.google.com/maps?q=${encodeURIComponent(act.lugar)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                
+                return `
+                    <div class="card">
+                        <h3>${act.deporte} en ${act.lugar}</h3>
+                        <iframe width="100%" height="200" src="${mapaUrl}"></iframe>
+                        <p>📅 ${new Date(act.fecha_hora).toLocaleString()}</p>
+                        <p>👥 Cupos: ${act.cupos_actuales} / ${act.cupos_totales}</p>
+                        <button onclick="unirse(${act.id})" class="btn btn-success">¡Me Uno!</button>
+                        <button onclick="verDetalle(${act.id})" class="btn btn-info">Ver Quiénes Van</button>
+                        <button onclick="desunirse(${act.id})" class="btn btn-danger">Ya no puedo ir</button>
+                    </div>
+                `;
+            }).join('');
+        } catch (e) {
+            contenedor.innerHTML = "<p>El servidor está despertando... espera unos segundos.</p>";
         }
-    } catch (e) { 
-        alert("Error al cargar la lista de inscritos."); 
     }
-}
 
-// 2. FUNCIÓN PARA DESUNIRSE (Liberar cupo)
-async function desunirse(id) {
-    const nombre = prompt("Ingresa el nombre con el que te inscribiste para salir de la lista:");
-    if (!nombre) return;
-
-    try {
-        const res = await fetch(`${API_URL}/api/desunirse`, {
+    // 2. UNIRSE
+    async function unirse(id) {
+        const nombre = prompt("¿Cuál es tu nombre?");
+        if (!nombre) return;
+        await fetch(`${API_URL}/api/unirse`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ partidoId: id, nombre_usuario: nombre })
         });
-        const data = await res.json();
-        
-        if (res.ok) {
-            alert(data.mensaje);
-            cargarActividades(); // Recargamos para ver el cupo liberado
-        } else {
-            alert(data.error || "No se pudo procesar la solicitud.");
-        }
-    } catch (e) { 
-        alert("Error al conectar con el servidor."); 
+        cargarActividades();
     }
-}
 
-// 3. ACTUALIZACIÓN DE CARGAR ACTIVIDADES (Con Mapa Corregido)
-async function cargarActividades() {
-    const contenedor = document.getElementById('lista-actividades');
-    try {
-        const res = await fetch(`${API_URL}/api/partidos`);
-        const datos = await res.json();
-        
-        if (datos.length === 0) {
-            contenedor.innerHTML = "<p>No hay encuentros programados por ahora.</p>";
-            return;
-        }
-
-        contenedor.innerHTML = datos.map(act => {
-            // Corregimos la URL del mapa para que sea dinámica según el lugar
-            const mapaUrl = `https://maps.google.com/maps?q=${encodeURIComponent(act.lugar)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-            
-            return `
-                <div class="card">
-                    <span class="badge">${act.deporte}</span>
-                    <h3>${act.deporte} en ${act.lugar}</h3>
-                    
-                    <div class="map-container" style="height:150px; margin-bottom:10px; border-radius:8px; overflow:hidden;">
-                        <iframe width="100%" height="100%" frameborder="0" src="${mapaUrl}"></iframe>
-                    </div>
-
-                    <p>📅 ${new Date(act.fecha_hora).toLocaleString()}</p>
-                    <p>👥 Cupos: ${act.cupos_actuales} / ${act.cupos_totales}</p>
-                    
-                    <button onclick="unirse(${act.id})" class="btn btn-success">¡Me Uno!</button>
-                    <button onclick="verDetalle(${act.id})" class="btn" style="background:#17a2b8; color:white; margin-top:5px; border:none; padding:10px; border-radius:5px; width:100%; cursor:pointer;">Ver Quiénes Van</button>
-                    <button onclick="desunirse(${act.id})" class="btn btn-danger" style="margin-top:5px;">Ya no puedo ir</button>
-                </div>
-            `;
-        }).join('');
-    } catch (e) { 
-        contenedor.innerHTML = "<p>El servidor está despertando... espera unos segundos.</p>"; 
+    // 3. VER QUIÉNES VAN
+    async function verDetalle(id) {
+        const res = await fetch(`${API_URL}/api/partidos/${id}/inscritos`);
+        const inscritos = await res.json();
+        alert("Lista de inscritos:\n" + (inscritos.map(i => "- " + i.nombre_usuario).join("\n") || "Nadie aún"));
     }
-}
+
+    // 4. DESUNIRSE
+    async function desunirse(id) {
+        const nombre = prompt("Ingresa tu nombre para salir de la lista:");
+        if (!nombre) return;
+        await fetch(`${API_URL}/api/desunirse`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ partidoId: id, nombre_usuario: nombre })
+        });
+        cargarActividades();
+    }
+
+    // 5. CREAR ACTIVIDAD
+    async function crearActividad() {
+        const payload = {
+            deporte: document.getElementById('deporte').value,
+            lugar: document.getElementById('lugar').value,
+            fecha_hora: document.getElementById('fecha_hora').value,
+            cupos_totales: document.getElementById('cupos_totales').value
+        };
+        await fetch(`${API_URL}/api/crear-partido`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        cargarActividades();
+    }
+
+    cargarActividades();
+</script>
+</body>
+</html>
