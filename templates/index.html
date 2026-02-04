@@ -168,16 +168,13 @@
 </div>
 
 <script>
-    /**
-     * CAMBIO DE URL: Ahora apunta a tu servicio permanente en Render.
-     * Reemplaza 'tu-app-backend' por el nombre real que le pusiste en Render.
-     */
-    const API_URL = "https://appmeanimo-backend.onrender.com"; 
+    // URL de tu servidor en Render
+    const API_URL = "https://meanimo-backend.onrender.com"; 
 
     async function actualizarInfoPartido() {
         try {
             const response = await fetch(`${API_URL}/api/partidos`);
-            if (!response.ok) throw new Error("Error en la red");
+            if (!response.ok) throw new Error("Error en la respuesta del servidor");
             
             const partidos = await response.json();
             const partido = partidos.find(p => p.id === 1);
@@ -189,16 +186,16 @@
                 const porcentaje = (partido.cupos_actuales / partido.cupos_totales) * 100;
                 document.getElementById('barra-progreso').style.width = porcentaje + "%";
 
-                // Deshabilitar botón si está lleno
                 if(partido.cupos_actuales >= partido.cupos_totales) {
                     const btn = document.getElementById('btn-unirme');
                     btn.innerText = "¡Partido Lleno!";
                     btn.classList.add('btn-disabled');
+                    btn.disabled = true;
                 }
             }
         } catch (error) {
-            console.error("Error:", error);
-            document.getElementById('contador-cupos').innerText = "Servidor despertando... (espera 30s)";
+            console.error("Error cargando datos:", error);
+            document.getElementById('contador-cupos').innerText = "Servidor despertando... (espera unos segundos)";
         }
     }
 
@@ -216,14 +213,15 @@
                 alert("¡Genial! Te has unido al partido ⚽");
                 actualizarInfoPartido();
             } else {
-                alert(data.error || "No se pudo unir");
+                alert(data.error || "No se pudo completar la unión");
             }
         } catch (error) {
-            alert("El servidor está tardando en responder. Intenta de nuevo en un momento.");
+            console.error("Error al unirse:", error);
+            alert("El servidor está tardando en responder. Por favor, intenta de nuevo.");
         }
     }
 
-    // Iniciar carga
+    // Carga inicial de datos
     actualizarInfoPartido();
 </script>
 
