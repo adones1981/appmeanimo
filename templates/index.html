@@ -151,7 +151,7 @@
             </div>
         </div>
 
-        <button onclick="unirseAlPartido(1)" class="btn-unirse">¡Me Animo y Me Uno!</button>
+        <button id="btn-unirme" onclick="unirseAlPartido(1)" class="btn-unirse">¡Me Animo y Me Uno!</button>
     </div>
 
     <div class="card disabled">
@@ -168,18 +168,64 @@
 </div>
 
 <script>
-    // URL de tu servidor en Codespaces (¡Asegúrate de que esté corriendo!)
-    const API_URL = "https://glowing-space-garbanzo-v65pp9qg5xw52w7pj-3000.app.github.dev";
+    /**
+     * CAMBIO DE URL: Ahora apunta a tu servicio permanente en Render.
+     * Reemplaza 'tu-app-backend' por el nombre real que le pusiste en Render.
+     */
+    const API_URL = "https://appmeanimo-backend.onrender.com"; 
 
-    // 1. Función para cargar los datos reales al entrar a la web
     async function actualizarInfoPartido() {
         try {
             const response = await fetch(`${API_URL}/api/partidos`);
-            const partidos = await response.json();
+            if (!response.ok) throw new Error("Error en la red");
             
-            // Buscamos el partido con ID 1
+            const partidos = await response.json();
             const partido = partidos.find(p => p.id === 1);
             
             if (partido) {
                 const cuposTexto = `Inscritos: ${partido.cupos_actuales} / ${partido.cupos_totales}`;
                 document.getElementById('contador-cupos').innerText = cuposTexto;
+                
+                const porcentaje = (partido.cupos_actuales / partido.cupos_totales) * 100;
+                document.getElementById('barra-progreso').style.width = porcentaje + "%";
+
+                // Deshabilitar botón si está lleno
+                if(partido.cupos_actuales >= partido.cupos_totales) {
+                    const btn = document.getElementById('btn-unirme');
+                    btn.innerText = "¡Partido Lleno!";
+                    btn.classList.add('btn-disabled');
+                }
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            document.getElementById('contador-cupos').innerText = "Servidor despertando... (espera 30s)";
+        }
+    }
+
+    async function unirseAlPartido(id) {
+        try {
+            const response = await fetch(`${API_URL}/api/unirse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partidoId: id })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("¡Genial! Te has unido al partido ⚽");
+                actualizarInfoPartido();
+            } else {
+                alert(data.error || "No se pudo unir");
+            }
+        } catch (error) {
+            alert("El servidor está tardando en responder. Intenta de nuevo en un momento.");
+        }
+    }
+
+    // Iniciar carga
+    actualizarInfoPartido();
+</script>
+
+</body>
+</html>
