@@ -3,62 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeAnimo - Inacap</title>
+    <title>MeAnimo ⚽ - Inacap</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 15px; }
+        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         input, select, textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         .btn { padding: 10px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; width: 100%; margin-top: 5px; }
         .btn-success { background: #28a745; }
         .btn-danger { background: #dc3545; }
-        .btn-edit { background: #ffc107; color: black; }
-        .btn-info { background: #17a2b8; }
+        .btn-disabled { background: #6c757d; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div style="max-width: 500px; margin: auto;">
         <h1>MeAnimo ⚽</h1>
+        
+        <div id="google-login" class="card">
+            <div id="buttonDiv"></div>
+            <p id="user-info" style="display:none; color: green;"></p>
+        </div>
+
         <div class="card">
-            <h3>Publicar Evento</h3>
+            <h3>Publicar Actividad</h3>
             <select id="deporte">
                 <option value="Fútbol">Fútbol</option>
                 <option value="Basquetbol">Basquetbol</option>
                 <option value="Ciclismo">Ciclismo</option>
                 <option value="Compañero de Gym">Compañero de Gym</option>
             </select>
-            <input type="text" id="lugar" placeholder="Dirección (Mapa)">
+            <input type="text" id="lugar" placeholder="Dirección">
             <input type="datetime-local" id="fecha_hora">
             <input type="number" id="cupos_totales" placeholder="Cupos totales">
-            <textarea id="comentarios" placeholder="Detalles: Cuota, hora término, implementos..."></textarea>
-            <button class="btn btn-success" onclick="crearActividad()">Publicar Ahora</button>
+            <input type="text" id="telefono" placeholder="WhatsApp (Ej: 56912345678)">
+            <textarea id="comentarios" placeholder="Cuota, detalles..."></textarea>
+            <button class="btn btn-success" onclick="crearActividad()">Publicar</button>
         </div>
         <div id="lista-actividades"></div>
     </div>
 
     <script>
         const API_URL = "https://meanimo-backend.onrender.com";
+        let usuarioActual = null;
+
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: "TU_CLIENT_ID_DE_GOOGLE.apps.googleusercontent.com",
+                callback: res => {
+                    const payload = JSON.parse(atob(res.credential.split('.')[1]));
+                    usuarioActual = payload.name;
+                    document.getElementById("user-info").innerText = "Conectado como: " + usuarioActual;
+                    document.getElementById("user-info").style.display = "block";
+                    document.getElementById("buttonDiv").style.display = "none";
+                }
+            });
+            google.accounts.id.renderButton(document.getElementById("buttonDiv"), { theme: "outline" });
+        }
 
         async function cargarActividades() {
             const res = await fetch(`${API_URL}/api/partidos`);
             const datos = await res.json();
             const contenedor = document.getElementById('lista-actividades');
-            contenedor.innerHTML = datos.map(act => `
+            contenedor.innerHTML = datos.map(act => {
+                const lleno = act.cupos_actuales >= act.cupos_totales;
+                const mapaUrl = `https://maps.google.com/maps?q=${encodeURIComponent(act.lugar)}&output=embed`;
+                
+                return `
                 <div class="card">
                     <div style="display:flex; justify-content:space-between">
                         <h3>${act.deporte}</h3>
-                        <button onclick="eliminarPublicacion(${act.id})" style="background:none; border:none; color:red; cursor:pointer;">✖ Eliminar</button>
+                        <button onclick="eliminar(${act.id})" style="color:red; border:none; background:none;">✖</button>
                     </div>
-                    <iframe width="100%" height="150" frameborder="0" src="https://maps.google.com/maps?q=${encodeURIComponent(act.lugar)}&output=embed"></iframe>
-                    <p>📍 ${act.lugar}</p>
+                    <iframe width="100%" height="150" src="${mapaUrl}"></iframe>
                     <p>📅 ${new Date(act.fecha_hora).toLocaleString()}</p>
-                    <p>📝 <strong>Nota:</strong> ${act.comentarios || 'Sin detalles'}</p>
-                    <p>👥 ${act.cupos_actuales} / ${act.cupos_totales} cupos</p>
+                    <p>📝 ${act.comentarios || ''}</p>
+                    <p>👥 <strong>${act.cupos_actuales} / ${act.cupos_totales}</strong></p>
                     
-                    <button class="btn btn-success" onclick="unirse(${act.id})">Me Uno</button>
-                    <button class="btn btn-edit" onclick="editarComentario(${act.id}, '${act.comentarios || ''}')">Editar Nota</button>
-                    <button class="btn btn-info" onclick="verInscritos(${act.id})">Ver Inscritos</button>
-                </div>
-            `).join('');
+                    <button class="btn ${lleno ? 'btn-disabled' : 'btn-success'}" 
+                            onclick="${lleno ? '' : `unirse(${act.id})`}" ${lleno ? 'disabled' : ''}>
+                        ${lleno ? 'CUPOS LLENOS' : '¡Me Uno!'}
+                    </button>
+                    <button class="btn" style="background:#ffc107; color:black;" onclick="editar(${act.id}, '${act.comentarios}')">Editar Nota</button>
+                </div>`;
+            }).join('');
+        }
+
+        async function unirse(id) {
+            const nombre = usuarioActual || prompt("Tu nombre:");
+            if (!nombre) return;
+            const res = await fetch(`${API_URL}/api/unirse`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ partidoId: id, nombre_usuario: nombre })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("¡Inscrito!");
+                if (data.telefono) {
+                    window.open(`https://wa.me/${data.telefono}?text=Hola, me inscribí en ${data.deporte} en ${data.lugar}. Soy ${nombre}`, '_blank');
+                }
+                cargarActividades();
+            } else { alert(data.error); }
         }
 
         async function crearActividad() {
@@ -67,41 +112,17 @@
                 lugar: document.getElementById('lugar').value,
                 fecha_hora: document.getElementById('fecha_hora').value,
                 cupos_totales: document.getElementById('cupos_totales').value,
-                comentarios: document.getElementById('comentarios').value
+                comentarios: document.getElementById('comentarios').value,
+                telefono_organizador: document.getElementById('telefono').value
             };
             await fetch(`${API_URL}/api/crear-partido`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-            alert("¡Publicado!");
             location.reload();
         }
 
-        async function editarComentario(id, actual) {
-            const nuevo = prompt("Edita el detalle del evento:", actual);
-            if (nuevo === null) return;
-            await fetch(`${API_URL}/api/partidos/${id}/comentario`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ comentarios: nuevo })
-            });
-            cargarActividades();
-        }
-
-        async function eliminarPublicacion(id) {
-            if (!confirm("¿Borrar esta publicación?")) return;
-            await fetch(`${API_URL}/api/partidos/${id}`, { method: 'DELETE' });
-            cargarActividades();
-        }
-
-        async function unirse(id) {
-            const nombre = prompt("¿Tu nombre?");
-            if (!nombre) return;
-            await fetch(`${API_URL}/api/unirse`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ partidoId: id, nombre_usuario: nombre }) });
-            cargarActividades();
-        }
-
-        async function verInscritos(id) {
-            const res = await fetch(`${API_URL}/api/partidos/${id}/inscritos`);
-            const lista = await res.json();
-            alert("Inscritos:\n" + (lista.map(i => "- " + i.nombre_usuario).join("\n") || "Nadie aún"));
+        async function eliminar(id) { if(confirm("¿Borrar?")) { await fetch(`${API_URL}/api/partidos/${id}`, {method:'DELETE'}); cargarActividades(); } }
+        async function editar(id, actual) {
+            const n = prompt("Nueva nota:", actual);
+            if(n !== null) { await fetch(`${API_URL}/api/partidos/${id}/comentario`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({comentarios:n}) }); cargarActividades(); }
         }
 
         cargarActividades();
