@@ -13,6 +13,7 @@
         .btn-success { background: var(--success); }
         .btn-info { background: #17a2b8; }
         .btn-danger { background: var(--danger); }
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         iframe { border-radius: 8px; margin-bottom: 10px; border: none; }
     </style>
 </head>
@@ -23,11 +24,23 @@
     
     <div class="card">
         <h3>➕ Publicar Actividad</h3>
-        <input type="text" id="deporte" placeholder="Deporte" style="width:95%; padding:10px; margin-bottom:10px;">
-        <input type="text" id="lugar" placeholder="Dirección (Ej: Inacap Santiago Sur)" style="width:95%; padding:10px; margin-bottom:10px;">
-        <input type="datetime-local" id="fecha_hora" style="width:95%; padding:10px; margin-bottom:10px;">
-        <input type="number" id="cupos_totales" placeholder="Cupos" style="width:95%; padding:10px; margin-bottom:10px;">
-        <button onclick="crearActividad()" class="btn btn-success" style="width:100%;">Publicar Ahora</button>
+        <select id="deporte">
+            <option value="" disabled selected>Selecciona un deporte...</option>
+            <option value="Fútbol">Fútbol</option>
+            <option value="Basquetbol">Basquetbol</option>
+            <option value="Ciclismo">Ciclismo</option>
+            <option value="Compañero de Gym">Compañero de Gym</option>
+            <option value="Senderismo">Senderismo</option>
+            <option value="Montañismo">Montañismo</option>
+            <option value="Tenis">Tenis</option>
+            <option value="Vóleibol">Vóleibol</option>
+        </select>
+        
+        <input type="text" id="lugar" placeholder="Dirección (Ej: Inacap Santiago Sur)">
+        <input type="datetime-local" id="fecha_hora">
+        <input type="number" id="cupos_totales" placeholder="Cupos Totales (Ej: 10)">
+        
+        <button onclick="crearActividad()" class="btn btn-success">Publicar Ahora</button>
     </div>
 
     <h2>📅 Próximos Encuentros</h2>
@@ -37,7 +50,7 @@
 <script>
     const API_URL = "https://meanimo-backend.onrender.com";
 
-    // 1. CARGAR ACTIVIDADES CON MAPA
+    // 1. CARGAR ACTIVIDADES
     async function cargarActividades() {
         const contenedor = document.getElementById('lista-actividades');
         try {
@@ -65,11 +78,46 @@
                 `;
             }).join('');
         } catch (e) {
-            contenedor.innerHTML = "<p>El servidor está despertando... espera unos segundos.</p>";
+            contenedor.innerHTML = "<p>Conectando con el servidor...</p>";
         }
     }
 
-    // 2. UNIRSE
+    // 2. CREAR ACTIVIDAD Y LIMPIAR CAMPOS
+    async function crearActividad() {
+        const deporte = document.getElementById('deporte').value;
+        const lugar = document.getElementById('lugar').value;
+        const fecha_hora = document.getElementById('fecha_hora').value;
+        const cupos_totales = document.getElementById('cupos_totales').value;
+
+        if(!deporte || !lugar || !fecha_hora || !cupos_totales) {
+            alert("Por favor, completa todos los campos.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/crear-partido`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ deporte, lugar, fecha_hora, cupos_totales })
+            });
+
+            if (res.ok) {
+                alert("✅ ¡Tu publicación se subió con éxito!"); // Mensaje de confirmación
+                
+                // Limpiar los campos de entrada
+                document.getElementById('deporte').value = "";
+                document.getElementById('lugar').value = "";
+                document.getElementById('fecha_hora').value = "";
+                document.getElementById('cupos_totales').value = "";
+                
+                cargarActividades(); // Refrescar lista
+            }
+        } catch (e) {
+            alert("Error al publicar el evento.");
+        }
+    }
+
+    // 3. UNIRSE, VER DETALLE Y DESUNIRSE (Igual que antes)
     async function unirse(id) {
         const nombre = prompt("¿Cuál es tu nombre?");
         if (!nombre) return;
@@ -81,14 +129,12 @@
         cargarActividades();
     }
 
-    // 3. VER QUIÉNES VAN
     async function verDetalle(id) {
         const res = await fetch(`${API_URL}/api/partidos/${id}/inscritos`);
         const inscritos = await res.json();
         alert("Lista de inscritos:\n" + (inscritos.map(i => "- " + i.nombre_usuario).join("\n") || "Nadie aún"));
     }
 
-    // 4. DESUNIRSE
     async function desunirse(id) {
         const nombre = prompt("Ingresa tu nombre para salir de la lista:");
         if (!nombre) return;
@@ -96,22 +142,6 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ partidoId: id, nombre_usuario: nombre })
-        });
-        cargarActividades();
-    }
-
-    // 5. CREAR ACTIVIDAD
-    async function crearActividad() {
-        const payload = {
-            deporte: document.getElementById('deporte').value,
-            lugar: document.getElementById('lugar').value,
-            fecha_hora: document.getElementById('fecha_hora').value,
-            cupos_totales: document.getElementById('cupos_totales').value
-        };
-        await fetch(`${API_URL}/api/crear-partido`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
         });
         cargarActividades();
     }
