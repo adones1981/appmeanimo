@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeAnimo - Crear Actividades</title>
+    <title>MeAnimo - Crear y Ver Actividades</title>
     <style>
         :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
@@ -17,6 +17,10 @@
         .btn-primary { background: var(--primary); }
         .btn-success { background: var(--success); }
         .map-container { height: 200px; border-radius: 8px; overflow: hidden; margin: 10px 0; border: 1px solid #ddd; }
+        
+        /* Estilos para la lista de actividades */
+        .actividad-item { border-left: 5px solid var(--primary); padding-left: 15px; margin-bottom: 15px; }
+        .info-tag { font-size: 0.85rem; background: #eee; padding: 2px 8px; border-radius: 10px; margin-right: 5px; }
     </style>
 </head>
 <body>
@@ -29,11 +33,11 @@
         <div class="form-group">
             <label>¿Qué actividad quieres hacer?</label>
             <select id="deporte">
-                <option value="Fútbol 5vs5">⚽ Fútbol 5vs5</option>
-                <option value="Básquetbol">🏀 Básquetbol</option>
-                <option value="Gimnasio / Partner Gym">🏋️ Partner de Gym</option>
-                <option value="Ciclismo / Ruta">🚴 Ciclismo</option>
-                <option value="Trekking">🥾 Trekking</option>
+                <option value="⚽ Fútbol">⚽ Fútbol 5vs5</option>
+                <option value="🏀 Básquetbol">🏀 Básquetbol</option>
+                <option value="🏋️ Partner Gym">🏋️ Partner de Gym</option>
+                <option value="🚴 Ciclismo">🚴 Ciclismo</option>
+                <option value="🥾 Trekking">🥾 Trekking</option>
             </select>
         </div>
         <div class="form-group">
@@ -45,24 +49,55 @@
             <input type="datetime-local" id="fecha_hora">
         </div>
         <div class="form-group">
-            <label>Cupos Totales (Personas)</label>
+            <label>Cupos Totales</label>
             <input type="number" id="cupos_totales" value="10">
         </div>
         <button onclick="crearActividad()" class="btn btn-primary">Publicar en MeAnimo</button>
     </div>
 
-    <h2>📍 Ubicación Sugerida (Inacap)</h2>
+    <h2>📅 Actividades Disponibles</h2>
+    <div id="lista-actividades">
+        <p style="text-align: center;">Cargando actividades...</p>
+    </div>
+
+    <h2>📍 Ubicación Inacap Santiago Sur</h2>
     <div class="card">
         <div class="map-container">
-            <iframe width="100%" height="100%" frameborder="0" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3327.4764831206686!2d-70.6038485!3d-33.4891266!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662d00799891783%3A0x6968032488a03c39!2sINACAP%20Santiago%20Sur!5e0!3m2!1ses!2scl!4v1700000000000"></iframe>
+            <iframe width="100%" height="100%" frameborder="0" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3326.634628236248!2d-70.6063777!3d-33.5108625!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662d00f72200001%3A0x66085f1c9f020001!2sINACAP%20Santiago%20Sur!5e0!3m2!1ses-419!2scl!4v1700000000000"></iframe>
         </div>
-        <p style="font-size: 0.9rem; color: #666;">Av. Vicuña Mackenna 3864, Macul.</p>
     </div>
 </div>
 
 <script>
     const API_URL = "https://meanimo-backend.onrender.com";
 
+    // 1. CARGAR ACTIVIDADES AL INICIAR
+    async function cargarActividades() {
+        const contenedor = document.getElementById('lista-actividades');
+        try {
+            const res = await fetch(`${API_URL}/api/partidos`);
+            const actividades = await res.json();
+            
+            if (actividades.length === 0) {
+                contenedor.innerHTML = "<p>No hay actividades publicadas aún.</p>";
+                return;
+            }
+
+            contenedor.innerHTML = actividades.map(act => `
+                <div class="card actividad-item">
+                    <h3>${act.deporte}</h3>
+                    <p><strong>📍 Lugar:</strong> ${act.lugar}</p>
+                    <p><strong>📅 Fecha:</strong> ${new Date(act.fecha_hora).toLocaleString()}</p>
+                    <div class="info-tag">Cupos: ${act.cupos_actuales} / ${act.cupos_totales}</div>
+                    <button onclick="unirse(${act.id})" class="btn btn-success" style="margin-top:10px;">¡Me Animo!</button>
+                </div>
+            `).join('');
+        } catch (error) {
+            contenedor.innerHTML = "<p>Error al conectar con el servidor.</p>";
+        }
+    }
+
+    // 2. CREAR NUEVA ACTIVIDAD
     async function crearActividad() {
         const payload = {
             deporte: document.getElementById('deporte').value,
@@ -71,9 +106,7 @@
             cupos_totales: document.getElementById('cupos_totales').value
         };
 
-        if(!payload.lugar || !payload.fecha_hora) {
-            return alert("Por favor completa todos los campos");
-        }
+        if(!payload.lugar || !payload.fecha_hora) return alert("Completa todos los campos");
 
         try {
             const res = await fetch(`${API_URL}/api/crear-partido`, {
@@ -83,13 +116,30 @@
             });
 
             if (res.ok) {
-                alert("¡Actividad publicada con éxito! Ahora otros pueden unirse.");
-                location.reload(); 
+                alert("¡Actividad publicada!");
+                cargarActividades(); // Recarga la lista sin refrescar toda la página
             }
         } catch (error) {
-            alert("Error al conectar con el servidor.");
+            alert("Error al publicar.");
         }
     }
+
+    // 3. UNIRSE
+    async function unirse(id) {
+        try {
+            const res = await fetch(`${API_URL}/api/unirse`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partidoId: id })
+            });
+            const data = await res.json();
+            alert(data.mensaje || data.error);
+            cargarActividades();
+        } catch (e) { alert("Error al unirse."); }
+    }
+
+    // Ejecutar carga inicial
+    cargarActividades();
 </script>
 </body>
 </html>
