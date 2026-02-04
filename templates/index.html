@@ -145,7 +145,7 @@
         </div>
 
         <div class="cupos">
-            <span id="contador-cupos">Cargando cupos...</span>
+            <span id="contador-cupos">Conectando con el servidor...</span>
             <div class="progress-container">
                 <div id="barra-progreso" class="progress-bar" style="width: 0%;"></div>
             </div>
@@ -168,13 +168,15 @@
 </div>
 
 <script>
-    // URL de tu servidor en Render
+    /**
+     * URL ACTUALIZADA: Ahora apunta a tu servidor permanente en Render.
+     */
     const API_URL = "https://meanimo-backend.onrender.com"; 
 
     async function actualizarInfoPartido() {
         try {
             const response = await fetch(`${API_URL}/api/partidos`);
-            if (!response.ok) throw new Error("Error en la respuesta del servidor");
+            if (!response.ok) throw new Error("Error en la respuesta");
             
             const partidos = await response.json();
             const partido = partidos.find(p => p.id === 1);
@@ -195,7 +197,7 @@
             }
         } catch (error) {
             console.error("Error cargando datos:", error);
-            document.getElementById('contador-cupos').innerText = "Servidor despertando... (espera unos segundos)";
+            document.getElementById('contador-cupos').innerText = "Servidor despertando... (30s aprox)";
         }
     }
 
@@ -217,11 +219,11 @@
             }
         } catch (error) {
             console.error("Error al unirse:", error);
-            alert("El servidor está tardando en responder. Por favor, intenta de nuevo.");
+            alert("El servidor está procesando tu solicitud. Reintenta en unos segundos.");
         }
     }
 
-    // Carga inicial de datos
+    // Carga inicial
     actualizarInfoPartido();
 </script>
 
