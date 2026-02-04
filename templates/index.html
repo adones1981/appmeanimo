@@ -1,18 +1,23 @@
-// 1. VER DETALLE E INSCRITOS
+// 1. FUNCIÓN PARA VER DETALLE E INSCRITOS
 async function verDetalle(id) {
-    const nombre = prompt("Ingresa tu nombre para ver la lista:");
-    if (!nombre) return;
-
+    // Nota: Eliminamos el prompt inicial para que cualquier invitado vea la lista de inmediato
     try {
         const res = await fetch(`${API_URL}/api/partidos/${id}/inscritos`);
         const inscritos = await res.json();
-        alert("Inscritos actualmente:\n" + inscritos.map(i => "- " + i.nombre_usuario).join("\n"));
-    } catch (e) { alert("Error al cargar lista."); }
+        
+        if (inscritos.length === 0) {
+            alert("Aún no hay nadie inscrito en este encuentro.");
+        } else {
+            alert("Inscritos actualmente:\n" + inscritos.map(i => "- " + i.nombre_usuario).join("\n"));
+        }
+    } catch (e) { 
+        alert("Error al cargar la lista de inscritos."); 
+    }
 }
 
-// 2. BOTÓN DE DESUNIRSE
+// 2. FUNCIÓN PARA DESUNIRSE (Liberar cupo)
 async function desunirse(id) {
-    const nombre = prompt("Ingresa tu nombre exacto para salir del partido:");
+    const nombre = prompt("Ingresa el nombre con el que te inscribiste para salir de la lista:");
     if (!nombre) return;
 
     try {
@@ -22,29 +27,53 @@ async function desunirse(id) {
             body: JSON.stringify({ partidoId: id, nombre_usuario: nombre })
         });
         const data = await res.json();
-        alert(data.mensaje || data.error);
-        cargarActividades();
-    } catch (e) { alert("Error al procesar solicitud."); }
+        
+        if (res.ok) {
+            alert(data.mensaje);
+            cargarActividades(); // Recargamos para ver el cupo liberado
+        } else {
+            alert(data.error || "No se pudo procesar la solicitud.");
+        }
+    } catch (e) { 
+        alert("Error al conectar con el servidor."); 
+    }
 }
 
-// 3. MAPA DINÁMICO (En el renderizado de la lista)
-// En tu función cargarActividades(), actualiza el HTML generado:
-contenedor.innerHTML = datos.map(act => `
-    <div class="card">
-        <span class="badge">${act.deporte}</span>
-        <h3>${act.deporte} en ${act.lugar}</h3>
+// 3. ACTUALIZACIÓN DE CARGAR ACTIVIDADES (Con Mapa Corregido)
+async function cargarActividades() {
+    const contenedor = document.getElementById('lista-actividades');
+    try {
+        const res = await fetch(`${API_URL}/api/partidos`);
+        const datos = await res.json();
         
-        <div class="map-container" style="height:150px; margin-bottom:10px;">
-            <iframe width="100%" height="100%" frameborder="0" 
-                src="https://maps.google.com/maps?q=${encodeURIComponent(act.lugar)}&t=&z=15&ie=UTF8&iwloc=&output=embed">
-            </iframe>
-        </div>
+        if (datos.length === 0) {
+            contenedor.innerHTML = "<p>No hay encuentros programados por ahora.</p>";
+            return;
+        }
 
-        <p>📅 ${new Date(act.fecha_hora).toLocaleString()}</p>
-        <p>👥 Cupos: ${act.cupos_actuales} / ${act.cupos_totales}</p>
-        
-        <button onclick="unirse(${act.id})" class="btn btn-success">¡Me Uno!</button>
-        <button onclick="verDetalle(${act.id})" class="btn" style="background:#17a2b8; margin-top:5px;">Ver Quiénes Van</button>
-        <button onclick="desunirse(${act.id})" class="btn btn-danger">Ya no puedo ir</button>
-    </div>
-`).join('');
+        contenedor.innerHTML = datos.map(act => {
+            // Corregimos la URL del mapa para que sea dinámica según el lugar
+            const mapaUrl = `https://maps.google.com/maps?q=${encodeURIComponent(act.lugar)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+            
+            return `
+                <div class="card">
+                    <span class="badge">${act.deporte}</span>
+                    <h3>${act.deporte} en ${act.lugar}</h3>
+                    
+                    <div class="map-container" style="height:150px; margin-bottom:10px; border-radius:8px; overflow:hidden;">
+                        <iframe width="100%" height="100%" frameborder="0" src="${mapaUrl}"></iframe>
+                    </div>
+
+                    <p>📅 ${new Date(act.fecha_hora).toLocaleString()}</p>
+                    <p>👥 Cupos: ${act.cupos_actuales} / ${act.cupos_totales}</p>
+                    
+                    <button onclick="unirse(${act.id})" class="btn btn-success">¡Me Uno!</button>
+                    <button onclick="verDetalle(${act.id})" class="btn" style="background:#17a2b8; color:white; margin-top:5px; border:none; padding:10px; border-radius:5px; width:100%; cursor:pointer;">Ver Quiénes Van</button>
+                    <button onclick="desunirse(${act.id})" class="btn btn-danger" style="margin-top:5px;">Ya no puedo ir</button>
+                </div>
+            `;
+        }).join('');
+    } catch (e) { 
+        contenedor.innerHTML = "<p>El servidor está despertando... espera unos segundos.</p>"; 
+    }
+}
