@@ -3,24 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MeAnimo - Crear y Ver Actividades</title>
+    <title>MeAnimo - Red Social Deportiva</title>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
+        :root { 
+            --primary: #007bff; 
+            --success: #28a745; 
+            --danger: #dc3545;
+            --bg: #f4f7f6; 
+        }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
-        header { background: var(--primary); color: white; padding: 20px; text-align: center; font-weight: bold; }
+        header { background: var(--primary); color: white; padding: 20px; text-align: center; font-weight: bold; font-size: 1.5rem; }
         .container { max-width: 600px; margin: auto; padding: 20px; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-primary { background: var(--primary); }
         .btn-success { background: var(--success); }
-        .map-container { height: 200px; border-radius: 8px; overflow: hidden; margin: 10px 0; border: 1px solid #ddd; }
-        
-        /* Estilos para la lista de actividades */
-        .actividad-item { border-left: 5px solid var(--primary); padding-left: 15px; margin-bottom: 15px; }
-        .info-tag { font-size: 0.85rem; background: #eee; padding: 2px 8px; border-radius: 10px; margin-right: 5px; }
+        .btn-danger { background: var(--danger); margin-top: 10px; }
+        .btn:hover { opacity: 0.9; }
+        .map-container { height: 250px; border-radius: 8px; overflow: hidden; margin: 10px 0; border: 1px solid #ddd; }
+        .admin-zone { border: 2px dashed #ccc; padding: 15px; margin-top: 30px; border-radius: 10px; display: none; }
+        .badge { display: inline-block; padding: 4px 10px; background: #e3f2fd; color: #0d47a1; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -28,12 +33,13 @@
 <header>MeAnimo ⚽🏀🏋️🚴</header>
 
 <div class="container">
+    
     <h2>➕ Publicar Nueva Actividad</h2>
     <div class="card">
         <div class="form-group">
-            <label>¿Qué actividad quieres hacer?</label>
+            <label>Deporte / Actividad</label>
             <select id="deporte">
-                <option value="⚽ Fútbol">⚽ Fútbol 5vs5</option>
+                <option value="⚽ Fútbol">⚽ Fútbol</option>
                 <option value="🏀 Básquetbol">🏀 Básquetbol</option>
                 <option value="🏋️ Partner Gym">🏋️ Partner de Gym</option>
                 <option value="🚴 Ciclismo">🚴 Ciclismo</option>
@@ -41,59 +47,78 @@
             </select>
         </div>
         <div class="form-group">
-            <label>¿Dónde será? (Lugar)</label>
-            <input type="text" id="lugar" placeholder="Ej: Inacap Santiago Sur">
+            <label>¿Dónde se juntan?</label>
+            <input type="text" id="lugar" placeholder="Ej: Canchas Inacap Santiago Sur">
         </div>
         <div class="form-group">
             <label>Fecha y Hora</label>
             <input type="datetime-local" id="fecha_hora">
         </div>
         <div class="form-group">
-            <label>Cupos Totales</label>
+            <label>Cupos Máximos</label>
             <input type="number" id="cupos_totales" value="10">
         </div>
-        <button onclick="crearActividad()" class="btn btn-primary">Publicar en MeAnimo</button>
+        <button onclick="crearActividad()" class="btn btn-primary">Publicar Actividad</button>
     </div>
 
-    <h2>📅 Actividades Disponibles</h2>
+    <h2>📅 Próximos Encuentros</h2>
     <div id="lista-actividades">
-        <p style="text-align: center;">Cargando actividades...</p>
+        <p style="text-align: center;">Buscando actividades en el servidor...</p>
     </div>
 
-    <h2>📍 Ubicación Inacap Santiago Sur</h2>
+    <h2>📍 Punto de Encuentro Sugerido</h2>
     <div class="card">
         <div class="map-container">
-            <iframe width="100%" height="100%" frameborder="0" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3326.634628236248!2d-70.6063777!3d-33.5108625!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662d00f72200001%3A0x66085f1c9f020001!2sINACAP%20Santiago%20Sur!5e0!3m2!1ses-419!2scl!4v1700000000000"></iframe>
+            <iframe width="100%" height="100%" frameborder="0" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3327.464606778931!2d-70.6133939!3d-33.489312!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9662d061f03f7e91%3A0x9597148508f75c40!2sINACAP%20Santiago%20Sur!5e0!3m2!1ses!2scl!4v1707000000000" allowfullscreen></iframe>
         </div>
+        <p style="font-size: 0.85rem; color: #666; text-align: center;">Av. Vicuña Mackenna 3864, Macul</p>
+    </div>
+
+    <hr>
+    <button onclick="toggleAdmin()" class="btn" style="background: #6c757d; font-size: 0.8rem;">Acceso Administrador</button>
+    
+    <div id="admin-panel" class="admin-zone">
+        <h3>🛠️ Panel de Control</h3>
+        <p>Ingresa la clave para gestionar las actividades:</p>
+        <input type="password" id="admin-pass" placeholder="Clave de admin">
     </div>
 </div>
 
 <script>
     const API_URL = "https://meanimo-backend.onrender.com";
+    let isAdminVisible = false;
 
-    // 1. CARGAR ACTIVIDADES AL INICIAR
+    // 1. CARGAR ACTIVIDADES DESDE EL BACKEND
     async function cargarActividades() {
         const contenedor = document.getElementById('lista-actividades');
         try {
             const res = await fetch(`${API_URL}/api/partidos`);
+            if (!res.ok) throw new Error();
             const actividades = await res.json();
             
             if (actividades.length === 0) {
-                contenedor.innerHTML = "<p>No hay actividades publicadas aún.</p>";
+                contenedor.innerHTML = "<p style='text-align:center;'>No hay actividades activas. ¡Sé el primero en crear una!</p>";
                 return;
             }
 
             contenedor.innerHTML = actividades.map(act => `
-                <div class="card actividad-item">
-                    <h3>${act.deporte}</h3>
-                    <p><strong>📍 Lugar:</strong> ${act.lugar}</p>
-                    <p><strong>📅 Fecha:</strong> ${new Date(act.fecha_hora).toLocaleString()}</p>
-                    <div class="info-tag">Cupos: ${act.cupos_actuales} / ${act.cupos_totales}</div>
-                    <button onclick="unirse(${act.id})" class="btn btn-success" style="margin-top:10px;">¡Me Animo!</button>
+                <div class="card">
+                    <span class="badge">${act.deporte}</span>
+                    <h3 style="margin: 10px 0;">${act.deporte} en ${act.lugar}</h3>
+                    <p><strong>📅 Cuándo:</strong> ${new Date(act.fecha_hora).toLocaleString()}</p>
+                    <p><strong>👥 Cupos:</strong> ${act.cupos_actuales} / ${act.cupos_totales}</p>
+                    
+                    <button onclick="unirse(${act.id})" class="btn btn-success" ${act.cupos_actuales >= act.cupos_totales ? 'disabled' : ''}>
+                        ${act.cupos_actuales >= act.cupos_totales ? 'Lleno' : '¡Me Uno!'}
+                    </button>
+
+                    <div class="admin-only" style="display: ${isAdminVisible ? 'block' : 'none'};">
+                        <button onclick="borrarActividad(${act.id})" class="btn btn-danger">Borrar Actividad (Admin)</button>
+                    </div>
                 </div>
             `).join('');
         } catch (error) {
-            contenedor.innerHTML = "<p>Error al conectar con el servidor.</p>";
+            contenedor.innerHTML = "<p style='color:red; text-align:center;'>Servidor despertando... Refresca en 30 segundos.</p>";
         }
     }
 
@@ -116,15 +141,13 @@
             });
 
             if (res.ok) {
-                alert("¡Actividad publicada!");
-                cargarActividades(); // Recarga la lista sin refrescar toda la página
+                alert("¡Actividad publicada con éxito! 🚀");
+                cargarActividades();
             }
-        } catch (error) {
-            alert("Error al publicar.");
-        }
+        } catch (error) { alert("Error al conectar."); }
     }
 
-    // 3. UNIRSE
+    // 3. UNIRSE A UNA ACTIVIDAD
     async function unirse(id) {
         try {
             const res = await fetch(`${API_URL}/api/unirse`, {
@@ -138,7 +161,29 @@
         } catch (e) { alert("Error al unirse."); }
     }
 
-    // Ejecutar carga inicial
+    // 4. FUNCIONES DE ADMINISTRADOR (BORRAR)
+    function toggleAdmin() {
+        const panel = document.getElementById('admin-panel');
+        isAdminVisible = !isAdminVisible;
+        panel.style.display = isAdminVisible ? 'block' : 'none';
+        cargarActividades(); // Recarga para mostrar/ocultar botones de borrar
+    }
+
+    async function borrarActividad(id) {
+        const pass = document.getElementById('admin-pass').value;
+        if(pass !== "1234") return alert("Clave de administrador incorrecta"); // Clave simple por ahora
+
+        if(confirm("¿Estás seguro de borrar esta actividad?")) {
+            try {
+                // Para borrar usaremos la ruta de actualización pero con tipo DELETE o similar
+                // Como sugerencia, puedes implementar la ruta de borrado en tu server.js
+                alert("Función de borrado activada para el ID: " + id);
+                // Aquí iría el fetch a tu backend para eliminar de Supabase
+            } catch (e) { alert("Error al borrar."); }
+        }
+    }
+
+    // Inicialización
     cargarActividades();
 </script>
 </body>
