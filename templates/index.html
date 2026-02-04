@@ -75,7 +75,6 @@
             font-weight: bold;
         }
 
-        /* Barra de progreso de cupos */
         .progress-container {
             background: #eee;
             height: 12px;
@@ -100,13 +99,15 @@
             border-radius: 8px;
             font-weight: bold;
             margin-top: 15px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
         }
 
         .btn-unirse:hover {
             background-color: #218838;
         }
 
-        /* Estilos para módulos no disponibles */
         .disabled {
             background: #fafafa;
             border: 1px dashed #ccc;
@@ -137,34 +138,48 @@
 
     <div class="card">
         <span class="badge">DEPORTE DESTACADO</span>
-        <h3>⚽ {{ partido.deporte }} 5vs5</h3>
+        <h3>⚽ Fútbol 5vs5</h3>
         <div class="info">
-            <p><strong>📍 Lugar:</strong> {{ partido.lugar }}</p>
-            <p><strong>📅 Cuándo:</strong> {{ partido.fecha }}</p>
+            <p><strong>📍 Lugar:</strong> Canchas Inacap Santiago</p>
+            <p><strong>📅 Cuándo:</strong> Viernes 20:00</p>
         </div>
 
         <div class="cupos">
-            Inscritos: {{ partido.participantes|length }} / {{ partido.cupos_totales }}
+            <span id="contador-cupos">Cargando cupos...</span>
             <div class="progress-container">
-                <div class="progress-bar" style="width: {{ (partido.participantes|length / partido.cupos_totales) * 100 }}%;"></div>
+                <div id="barra-progreso" class="progress-bar" style="width: 0%;"></div>
             </div>
         </div>
 
-        <a href="/unirse" class="btn-unirse">¡Me Animo y Me Uno!</a>
+        <button onclick="unirseAlPartido(1)" class="btn-unirse">¡Me Animo y Me Uno!</button>
     </div>
 
     <div class="card disabled">
         <h3>🏀 Básquetbol 3vs3</h3>
         <p class="coming-soon">Módulo disponible en la próxima actualización.</p>
-        <a href="#" class="btn-unirse btn-disabled">Bloqueado</a>
+        <button class="btn-unirse btn-disabled">Bloqueado</button>
     </div>
 
     <div class="card disabled">
         <h3>🏋️ Partner de Gym</h3>
         <p class="coming-soon">Módulo disponible en la próxima actualización.</p>
-        <a href="#" class="btn-unirse btn-disabled">Bloqueado</a>
+        <button class="btn-unirse btn-disabled">Bloqueado</button>
     </div>
 </div>
 
-</body>
-</html>
+<script>
+    // URL de tu servidor en Codespaces (¡Asegúrate de que esté corriendo!)
+    const API_URL = "https://glowing-space-garbanzo-v65pp9qg5xw52w7pj-3000.app.github.dev";
+
+    // 1. Función para cargar los datos reales al entrar a la web
+    async function actualizarInfoPartido() {
+        try {
+            const response = await fetch(`${API_URL}/api/partidos`);
+            const partidos = await response.json();
+            
+            // Buscamos el partido con ID 1
+            const partido = partidos.find(p => p.id === 1);
+            
+            if (partido) {
+                const cuposTexto = `Inscritos: ${partido.cupos_actuales} / ${partido.cupos_totales}`;
+                document.getElementById('contador-cupos').innerText = cuposTexto;
